@@ -15,6 +15,7 @@ import {
 import Permissions from 'react-native-permissions';
 import ImagePicker from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
+import BackgroundTask from 'react-native-background-task';
 
 import ActionsOverlay from '../../components/Actions';
 import Progressbar from '../../components/Progressbar';
@@ -99,17 +100,17 @@ class MainScreen extends Component {
         return this.position.getLayout();
     };
 
-    onActionPress = (action) => {
+    onActionPress = (action) => {   // temporary
         let progress;
         switch (action) {
             case 'home':
-                progress = {personal: 23};
+                progress = {personal: 90};
                 break;
             case 'work':
-                progress = {projectActivities: 43};
+                progress = {projectActivities: 95};
                 break;
             case 'soft':
-                progress = {softSkills: 50};
+                progress = {softSkills: 100};
                 break;
             case 'hard':
                 progress = {hardSkills: 80};
@@ -168,6 +169,44 @@ class MainScreen extends Component {
         });
     }
 
+    async initProgress() {
+        let progress = await AsyncStorage.getItem('progress');
+
+        if (progress) {
+            progress = JSON.parse(progress);
+        } else {
+            progress = {
+                personal: 50,
+                projectActivities: 50,
+                softSkills: 50,
+                hardSkills: 50,
+            };
+        }
+
+        this.updateProgress(progress);
+    }
+
+    async updateProgress(progress) {
+        await AsyncStorage.setItem('progress', JSON.stringify(progress));
+        this.props.changeProgress(progress);
+    }
+
+    static async checkStatus() {
+        const status = await BackgroundTask.statusAsync();
+
+        if (status.available) {
+            // Everything's fine
+            return
+        }
+
+        const reason = status.unavailableReason;
+        if (reason === BackgroundTask.UNAVAILABLE_DENIED) {
+            Alert.alert('Denied', 'Please enable background "Background App Refresh" for this app');
+        } else if (reason === BackgroundTask.UNAVAILABLE_RESTRICTED) {
+            Alert.alert('Restricted', 'Background tasks are restricted on your device');
+        }
+    }
+
     logout = async () => {
         await AsyncStorage.setItem('user', '');
         this.props.navigation.navigate('Login');
@@ -187,6 +226,13 @@ class MainScreen extends Component {
                 this.props.setPosition(position);
                 this.props.fetchWeather(position);
             }
+
+            await this.initProgress();
+            BackgroundTask.schedule({
+                period: 900,    // 15 min
+            });
+            // Optional: Check if the device is blocking background tasks or not
+            MainScreen.checkStatus();
         } catch (error) {
             Alert.alert('Error', error.message);
         }
