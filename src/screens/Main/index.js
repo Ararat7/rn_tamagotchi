@@ -100,23 +100,119 @@ class MainScreen extends Component {
     };
 
     onActionPress = (action) => {
-        let progress;
+        let progress;   // temp
+        let gameState;
         switch (action) {
             case 'home':
+                gameState = {
+                    actions: {
+                        home: false,
+                        work: true, // if not sleeping
+                        soft: false,
+                        hard: false,
+                        asmt: false,
+                        docs: true, // if not sleeping (self learning)
+                    },
+                    progress: {
+                        personal: 1,
+                        projectActivities: 0,
+                        soft: -1,
+                        hard: -1,
+                    },
+                };
+
                 progress = {personal: 23};
                 break;
             case 'work':
+                gameState = {
+                    actions: {
+                        home: true,
+                        work: false,
+                        soft: true,
+                        hard: true,
+                        asmt: true,
+                        docs: true,
+                    },
+                    progress: {
+                        personal: -1,
+                        projectActivities: 1,
+                        soft: -1,
+                        hard: 0,
+                    },
+                };
+
                 progress = {projectActivities: 43};
                 break;
             case 'soft':
+                gameState = {
+                    actions: {
+                        home: false,
+                        work: false,
+                        soft: false,
+                        hard: false,
+                        asmt: false,
+                        docs: false,
+                    },
+                    progress: {
+                        personal: -1,
+                        projectActivities: -1,
+                        soft: 1,
+                        hard: -1,
+                    },
+                };
+
                 progress = {softSkills: 50};
                 break;
             case 'hard':
+                gameState = {
+                    actions: {
+                        home: false,
+                        work: false,
+                        soft: false,
+                        hard: false,
+                        asmt: false,
+                        docs: false,
+                    },
+                    progress: {
+                        personal: -1,
+                        projectActivities: -1,
+                        soft: 0,
+                        hard: 1,
+                    },
+                };
+
                 progress = {hardSkills: 80};
+                break;
+            case 'asmt':
+                // check progress and do something ???
+                break;
+            case 'docs':
+                gameState = {
+                    actions: {
+                        home: false,
+                        work: false,
+                        soft: false,
+                        hard: false,
+                        asmt: false,
+                        docs: false,
+                    },
+                    progress: {
+                        personal: -1,   // goes down if at home
+                        projectActivities: -1,  // goes down if at work
+                        soft: 0,
+                        hard: 1,
+                    },
+                };
+
                 break;
             default:
                 break;
         }
+
+        gameState.action = action;
+        gameState.time = Date.now();
+
+        AsyncStorage.setItem('gameState', JSON.stringify(gameState));
 
         return progress && this.props.changeProgress(progress);
     };
