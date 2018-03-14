@@ -20,7 +20,7 @@ BackgroundTask.define(async () => {
 
     progress = JSON.parse(progress);
 
-    for (let key of progress) {
+    for (let key in progress) {
         if (progress[key]) {
             if (progress[key] >= DECREASE_AMOUNT) {
                 progress[key] -= DECREASE_AMOUNT;

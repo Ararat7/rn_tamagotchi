@@ -11,6 +11,7 @@ import {
     PanResponder,
     Dimensions,
     Alert,
+    AppState,
 } from 'react-native';
 import Permissions from 'react-native-permissions';
 import ImagePicker from 'react-native-image-picker';
@@ -149,24 +150,30 @@ class MainScreen extends Component {
     };
 
     async getPosition() {
-        const status = await Permissions.request('location', {type: 'always'});
-        this.hasLocationPermission = status === 'authorized';
+        try {
+            const status = await Permissions.request('location', {type: 'always'});
+            this.hasLocationPermission = status === 'authorized';
 
-        return new Promise((resolve, reject) => {
-            if (!this.hasLocationPermission) {
-                reject(new Error('No location permission!'));
-            }
+            return new Promise((resolve, reject) => {
+                if (!this.hasLocationPermission) {
+                    reject(new Error('No location permission!'));
+                }
 
-            navigator.geolocation.getCurrentPosition((position) => {
-                resolve(position);
-            }, (error) => {
-                reject(error);
-            }, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 1000,
+                navigator.geolocation.getCurrentPosition((position) => {
+                    resolve(position);
+                }, (error) => {
+                    reject(error);
+                }, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 1000,
+                });
             });
-        });
+        } catch (err) {
+            return new Promise((resolve, reject) => {
+                resolve(null);
+            });
+        }
     }
 
     async initProgress() {
@@ -196,7 +203,7 @@ class MainScreen extends Component {
 
         if (status.available) {
             // Everything's fine
-            return
+            return;
         }
 
         const reason = status.unavailableReason;
@@ -213,8 +220,29 @@ class MainScreen extends Component {
         this.props.logout();
     };
 
+    handleAppStateChange = (nextAppState) => {
+        if (nextAppState === 'active') {
+            this.initProgress();
+        }
+    };
+
+    componentDidMount() {
+        AppState.addEventListener('change', this.handleAppStateChange);
+    }
+
+    componentWillUnmount() {
+        AppState.removeEventListener('change', this.handleAppStateChange);
+    }
+
     async componentWillMount() {
         try {
+            await this.initProgress();
+            BackgroundTask.schedule({
+                period: 900,    // 15 min
+            });
+            // Optional: Check if the device is blocking background tasks or not
+            MainScreen.checkStatus();
+
             const imageURI = await AsyncStorage.getItem('imageURI');
             imageURI && this.props.changeImage(imageURI);
 
@@ -226,13 +254,6 @@ class MainScreen extends Component {
                 this.props.setPosition(position);
                 this.props.fetchWeather(position);
             }
-
-            await this.initProgress();
-            BackgroundTask.schedule({
-                period: 900,    // 15 min
-            });
-            // Optional: Check if the device is blocking background tasks or not
-            MainScreen.checkStatus();
         } catch (error) {
             Alert.alert('Error', error.message);
         }
