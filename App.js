@@ -3,6 +3,7 @@ import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import thunk from 'redux-thunk';
 import BackgroundTask from 'react-native-background-task';
+import PushNotification from 'react-native-push-notification';
 
 import AppReducer from './src/reducers/appReducer';
 import AppWithNavigationState, {middleware} from './src/AppNavigator';
@@ -33,6 +34,10 @@ BackgroundTask.define(async () => {
 
     if (isProgressCritical) {
         // show notification
+        PushNotification.localNotification({
+            title: "RN Tamagotchi",
+            message: "Your progress is critically low!",
+        });
     }
 
     await AsyncStorage.setItem('progress', JSON.stringify(progress));
